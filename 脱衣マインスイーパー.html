@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>脱衣マインスイーパー</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root {
+    --cell-size: 40px;
+    --img-closed: none;
+    --img-opened: none;
+    --cols: 9;
+    --rows: 12;
+  }
+
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 20px 0;
+    background-color: #f5f5f5;
+  }
+
+  .screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* ▼▼▼ ステージ選択画面のスタイル ▼▼▼ */
+  .stage-list {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+    max-width: 800px;
+  }
+
+  .stage-card {
+    background: #fff;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    text-align: center;
+    width: 160px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .stage-card:hover:not(.locked) {
+    transform: translateY(-5px);
+    border-color: #888;
+  }
+
+  .stage-card.locked {
+    cursor: not-allowed;
+    background: #e9e9e9;
+    border-color: #ddd;
+    color: #999;
+  }
+
+  .stage-thumb {
+    width: 100%;
+    height: 240px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    border: 1px solid #eee;
+  }
+
+  .stage-thumb.locked {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 4em;
+    border: none;
+  }
+  .stage-thumb.locked::after {
+    content: '🔒';
+    text-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+  }
+
+  .stage-title {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: inherit;
+  }
+
+  .stage-desc {
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 5px;
+  }
+  .stage-card.locked .stage-desc {
+    color: #aaa;
+  }
+
+  /* ▼▼▼ ゲーム画面のスタイル ▼▼▼ */
+  #game-container {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    justify-content: center;
+    margin-top: 0px;
+    flex-wrap: wrap; 
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--cell-size));
+    grid-template-rows: repeat(var(--rows), var(--cell-size));
+    background-color: #ccc;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  .cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    background-image: var(--img-closed);
+    background-size: calc(var(--cell-size) * var(--cols)) calc(var(--cell-size) * var(--rows));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    font-size: 18px;
+    box-sizing: border-box;
+    
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4), inset -1px -1px 0 rgba(0, 0, 0, 0.5);
+    text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+  }
+
+  .cell.opened {
+    background-image: var(--img-opened);
+    cursor: default;
+    box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.4), inset 1px 1px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  #board.cleared .cell {
+    transition: box-shadow 1s ease;
+    box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0); 
+  }
+
+  .cell.flagged::after {
+    content: '🚩';
+    font-size: 16px;
+    text-shadow: 
+      -1px -1px 0 #fff,  
+       1px -1px 0 #fff,
+      -1px  1px 0 #fff,
+       1px  1px 0 #fff,
+       0    0   4px rgba(0,0,0,0.8);
+  }
+
+  .mine { color: red; text-shadow: none; }
+  .number-1 { color: #1e3a8a; }
+  .number-2 { color: #15803d; }
+  .number-3 { color: #b91c1c; }
+  .number-4 { color: #6b21a8; }
+  .number-5 { color: #9a3412; }
+  .number-6 { color: #0369a1; }
+  .number-7 { color: #111827; }
+  .number-8 { color: #4b5563; }
+
+  /* ▼ 変更点：サイドパネルの幅を固定し、文字数変化によるレイアウトのズレを防止 */
+  #side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 240px; /* min-widthから固定のwidthに変更 */
+    box-sizing: border-box; /* paddingを含めた幅として計算させる */
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+
+  #status {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #333;
+    height: 1.5em;
+    text-align: center;
+  }
+  
+  #mine-count {
+    font-size: 1.1em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  button {
+    padding: 12px 16px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #aaa;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    width: 100%; 
+    transition: all 0.2s;
+  }
+
+  button:hover {
+    background-color: #e0e0e0;
+  }
+
+  #mode-toggle-btn {
+    background-color: #f0f9ff;
+    border: 2px solid #bae6fd;
+    color: #0369a1;
+    margin-bottom: 10px; 
+  }
+
+  #mode-toggle-btn.flag-mode {
+    background-color: #fff1f2;
+    border: 2px solid #fecdd3;
+    color: #be123c;
+  }
+
+</style>
+</head>
+<body>
+
+<div id="screen-menu" class="screen">
+  <h2>ステージ選択</h2>
+  <div id="stage-list" class="stage-list">
+    </div>
+</div>
+
+<div id="screen-game" class="screen" style="display: none;">
+  <h2 id="game-title">マインスイーパー</h2>
+  
+  <div id="game-container">
+    <div id="board"></div>
+    
+    <div id="side-panel">
+      <div id="status"></div>
+      <div id="mine-count"></div>
+      <div class="controls">
+        <button id="mode-toggle-btn" onclick="toggleMode()">モード：開ける ⛏️</button>
+        <button onclick="init()">リトライ</button>
+        <button onclick="showMenu()">ステージ選択</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ▼▼▼ 設定エリア ▼▼▼
+  const DEV_MODE = false; 
+
+  const STAGES = {
+    beginner: {
+      title: "初級",
+      imgClosed: "https://files.catbox.moe/moscbm.jpg",
+      imgOpened: "https://files.catbox.moe/y9f87l.jpg",
+      cols: 9,           
+      minePercent: 12    
+    },
+    intermediate: {
+      title: "中級",
+      imgClosed: "https://files.catbox.moe/757w0c.jpg",
+      imgOpened: "https://files.catbox.moe/40ngqj.jpg",
+      cols: 9,           
+      minePercent: 16    
+    },
+    advanced: {
+      title: "上級",
+      imgClosed: "https://files.catbox.moe/e6vmgy.jpg",
+      imgOpened: "https://files.catbox.moe/fp9k62.jpg",
+      cols: 9,          
+      minePercent: 20    
+    }
+  };
+
+  
+  const STAGE_ORDER = ['beginner', 'intermediate', 'advanced'];
+  // ▲▲▲ 設定エリアここまで ▲▲▲
+
+  let unlockedStages = DEV_MODE ? [...STAGE_ORDER] : ['beginner'];
+  let clearedStages = []; 
+  
+  let currentStageId = null;
+  let currentStageConfig = null;
+  let COLS = 9;
+  let ROWS = 12; 
+  let MINES = 10;
+  let board = [];
+  let gameOver = false;
+  let firstClick = true;
+  let flagsRemaining = 0;
+
+  let isFlagMode = false;
+
+  const menuScreen = document.getElementById('screen-menu');
+  const gameScreen = document.getElementById('screen-game');
+  const gameTitle = document.getElementById('game-title');
+  const boardElement = document.getElementById('board');
+  const statusElement = document.getElementById('status');
+  const mineCountElement = document.getElementById('mine-count');
+  const stageList = document.getElementById('stage-list');
+  const modeToggleBtn = document.getElementById('mode-toggle-btn');
+
+  function toggleMode() {
+    if (gameOver) return;
+    isFlagMode = !isFlagMode;
+    if (isFlagMode) {
+      modeToggleBtn.innerText = 'モード：旗を立てる 🚩';
+      modeToggleBtn.classList.add('flag-mode');
+    } else {
+      modeToggleBtn.innerText = 'モード：開ける ⛏️';
+      modeToggleBtn.classList.remove('flag-mode');
+    }
+  }
+
+  function initMenu() {
+    stageList.innerHTML = '';
+    
+    for (let i = 0; i < STAGE_ORDER.length; i++) {
+      const key = STAGE_ORDER[i];
+      const stage = STAGES[key];
+      const isUnlocked = unlockedStages.includes(key);
+      const isCleared = clearedStages.includes(key); 
+
+      const card = document.createElement('div');
+      card.classList.add('stage-card');
+
+      const thumb = document.createElement('div');
+      thumb.classList.add('stage-thumb');
+
+      const title = document.createElement('div');
+      title.classList.add('stage-title');
+
+      const desc = document.createElement('div');
+      desc.classList.add('stage-desc');
+
+      if (isUnlocked) {
+        card.onclick = () => startStage(key);
+        title.innerText = stage.title;
+        
+        if (isCleared) {
+          thumb.style.backgroundImage = `url('${stage.imgOpened}')`;
+        } else {
+          thumb.style.backgroundImage = `url('${stage.imgClosed}')`;
+        }
+        
+        desc.innerText = `${stage.cols}×?マス / 地雷${stage.minePercent}%`;
+        const img = new Image();
+        img.src = stage.imgOpened;
+        img.onload = function() {
+          const rows = Math.round(stage.cols * (img.height / img.width));
+          desc.innerText = `${stage.cols}×${rows}マス / 地雷${stage.minePercent}%`;
+        };
+      } else {
+        card.classList.add('locked');
+        thumb.classList.add('locked');
+        thumb.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('${stage.imgClosed}')`;
+        
+        title.innerText = `${stage.title} (未解放)`;
+        desc.innerText = `???×???マス / 地雷???%`;
+      }
+
+      card.appendChild(thumb);
+      card.appendChild(title);
+      card.appendChild(desc);
+      stageList.appendChild(card);
+    }
+  }
+
+  function startStage(stageKey) {
+    currentStageId = stageKey;
+    currentStageConfig = STAGES[stageKey];
+    gameTitle.innerText = `${currentStageConfig.title}ステージ`;
+    
+    menuScreen.style.display = 'none';
+    gameScreen.style.display = 'flex';
+    statusElement.innerText = '画像を読み込み中...';
+    boardElement.innerHTML = '';
+
+    const img = new Image();
+    img.src = currentStageConfig.imgOpened;
+    
+    img.onload = function() {
+      const aspectRatio = img.height / img.width;
+      setupGameVariables(aspectRatio);
+    };
+
+    img.onerror = function() {
+      setupGameVariables(4 / 3);
+    };
+  }
+
+  function showMenu() {
+    gameScreen.style.display = 'none';
+    menuScreen.style.display = 'flex';
+    initMenu(); 
+  }
+
+  function setupGameVariables(aspectRatio) {
+    COLS = currentStageConfig.cols;
+    ROWS = Math.round(COLS * aspectRatio);
+    
+    MINES = Math.floor((ROWS * COLS) * (currentStageConfig.minePercent / 100));
+    MINES = Math.min(MINES, (ROWS * COLS) - 9);
+
+    document.documentElement.style.setProperty('--img-closed', `url('${currentStageConfig.imgClosed}')`);
+    document.documentElement.style.setProperty('--img-opened', `url('${currentStageConfig.imgOpened}')`);
+    document.documentElement.style.setProperty('--cols', COLS);
+    document.documentElement.style.setProperty('--rows', ROWS);
+
+    init(); 
+  }
+
+  function init() {
+    boardElement.innerHTML = '';
+    statusElement.innerText = '';
+    gameOver = false;
+    firstClick = true;
+    flagsRemaining = MINES;
+    mineCountElement.innerText = `残りの地雷: ${flagsRemaining}`;
+    boardElement.classList.remove('cleared');
+    board = [];
+
+    isFlagMode = false;
+    modeToggleBtn.innerText = 'モード：開ける ⛏️';
+    modeToggleBtn.classList.remove('flag-mode');
+
+    for (let r = 0; r < ROWS; r++) {
+      let row = [];
+      for (let c = 0; c < COLS; c++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.style.backgroundPosition = `-${c * 40}px -${r * 40}px`;
+        
+        cell.addEventListener('click', () => {
+          if (isFlagMode) {
+            toggleFlag(r, c); 
+          } else {
+            reveal(r, c);     
+          }
+        });
+        
+        cell.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          toggleFlag(r, c);
+        });
+        
+        boardElement.appendChild(cell);
+        row.push({
+          element: cell,
+          isMine: false,
+          isRevealed: false,
+          isFlagged: false,
+          neighborMines: 0
+        });
+      }
+      board.push(row);
+    }
+  }
+
+  function placeMinesAndNumbers(firstR, firstC) {
+    let minesPlaced = 0;
+    while (minesPlaced < MINES) {
+      let r = Math.floor(Math.random() * ROWS);
+      let c = Math.floor(Math.random() * COLS);
+      
+      let isSafeZone = Math.abs(r - firstR) <= 1 && Math.abs(c - firstC) <= 1;
+
+      if (!board[r][c].isMine && !isSafeZone) {
+        board[r][c].isMine = true;
+        minesPlaced++;
+      }
+    }
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (!board[r][c].isMine) {
+          let count = 0;
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              let nr = r + dr;
+              let nc = c + dc;
+              if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc].isMine) {
+                count++;
+              }
+            }
+          }
+          board[r][c].neighborMines = count;
+        }
+      }
+    }
+  }
+
+  function reveal(r, c) {
+    if (gameOver || board[r][c].isRevealed || board[r][c].isFlagged) return;
+
+    if (firstClick) {
+      placeMinesAndNumbers(r, c);
+      firstClick = false;
+    }
+
+    let cellData = board[r][c];
+    cellData.isRevealed = true;
+    cellData.element.classList.add('opened');
+
+    if (cellData.isMine) {
+      cellData.element.innerText = '💥';
+      cellData.element.classList.add('mine');
+      statusElement.innerText = 'ゲームオーバー！';
+      statusElement.style.color = 'red';
+      gameOver = true;
+      revealAllMines();
+    } else {
+      if (cellData.neighborMines > 0) {
+        cellData.element.innerText = cellData.neighborMines;
+        cellData.element.classList.add('number-' + cellData.neighborMines);
+      } else {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            let nr = r + dr;
+            let nc = c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              reveal(nr, nc);
+            }
+          }
+        }
+      }
+      checkWin();
+    }
+  }
+
+  function toggleFlag(r, c) {
+    if (gameOver || board[r][c].isRevealed) return;
+    let cellData = board[r][c];
+    cellData.isFlagged = !cellData.isFlagged;
+    cellData.element.classList.toggle('flagged');
+
+    if (cellData.isFlagged) {
+      flagsRemaining--;
+    } else {
+      flagsRemaining++;
+    }
+    mineCountElement.innerText = `残りの地雷: ${flagsRemaining}`;
+  }
+
+  function revealAllMines() {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (board[r][c].isMine) {
+          board[r][c].element.classList.add('opened');
+          if (!board[r][c].element.innerText) {
+            board[r][c].element.innerText = '💣';
+          }
+        }
+      }
+    }
+  }
+
+  function checkWin() {
+    let revealedCount = 0;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (board[r][c].isRevealed) revealedCount++;
+      }
+    }
+    
+    if (revealedCount === ROWS * COLS - MINES) {
+      statusElement.innerText = 'クリア！';
+      statusElement.style.color = '#15803d';
+      gameOver = true;
+      
+      boardElement.classList.add('cleared'); 
+      mineCountElement.innerText = `残りの地雷: 0`;
+      
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          let cell = board[r][c].element;
+          cell.innerText = ''; 
+          cell.classList.remove('flagged');
+          cell.classList.add('opened');
+        }
+      }
+
+      setTimeout(() => {
+        const duration = 1 * 1000; 
+        const end = Date.now() + duration;
+
+        (function frame() {
+          confetti({
+            particleCount: 5,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            zIndex: 1000
+          });
+          confetti({
+            particleCount: 5,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            zIndex: 1000
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        }());
+      }, 1000); 
+
+      if (!clearedStages.includes(currentStageId)) {
+        clearedStages.push(currentStageId);
+      }
+
+      const currentIndex = STAGE_ORDER.indexOf(currentStageId);
+      if (currentIndex < STAGE_ORDER.length - 1) {
+        const nextStageId = STAGE_ORDER[currentIndex + 1];
+        if (!unlockedStages.includes(nextStageId)) {
+          unlockedStages.push(nextStageId);
+        }
+      }
+    }
+  }
+
+  initMenu();
+</script>
+</body>
+</html>
