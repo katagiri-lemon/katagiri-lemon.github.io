@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>脱衣マインスイーパー</title>
+<title>マインスイーパーマスター！</title>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
   :root {
@@ -16,7 +16,7 @@
   body {
     font-family: sans-serif;
     margin: 0;
-    padding: 20px 0;
+    padding: 10px 0 20px 0; 
     background-color: #f5f5f5;
   }
 
@@ -27,13 +27,54 @@
     width: 100%;
   }
 
+  h2 {
+    margin: 10px 0;
+  }
+
+  /* ▼▼▼ ルール説明のスタイル ▼▼▼ */
+  .rule-box {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-sizing: border-box;
+  }
+  
+  .menu-rule {
+    width: 90%;
+    max-width: 600px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .game-rule {
+    margin-top: 5px;
+    padding: 12px;
+    background: #fdfdfd;
+  }
+
+  .rule-desc {
+    margin: 10px 0 0 0;
+    font-size: 0.9em;
+    color: #444;
+    line-height: 1.5;
+  }
+
+  .game-rule-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.85em;
+    color: #555;
+    line-height: 1.4;
+  }
+
   /* ▼▼▼ ステージ選択画面のスタイル ▼▼▼ */
   .stage-list {
     display: flex;
     gap: 20px;
     flex-wrap: wrap;
     justify-content: center;
-    margin-top: 20px;
     max-width: 800px;
   }
 
@@ -44,7 +85,7 @@
     padding: 12px;
     cursor: pointer;
     text-align: center;
-    width: 160px;
+    width: 150px; 
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     transition: transform 0.2s, border-color 0.2s;
   }
@@ -63,7 +104,7 @@
 
   .stage-thumb {
     width: 100%;
-    height: 240px;
+    height: 200px; 
     background-size: cover;
     background-position: center;
     border-radius: 4px;
@@ -85,12 +126,12 @@
 
   .stage-title {
     font-weight: bold;
-    font-size: 1.2em;
+    font-size: 1.1em;
     color: inherit;
   }
 
   .stage-desc {
-    font-size: 0.85em;
+    font-size: 0.8em;
     color: #666;
     margin-top: 5px;
   }
@@ -101,10 +142,10 @@
   /* ▼▼▼ ゲーム画面のスタイル ▼▼▼ */
   #game-container {
     display: flex;
-    gap: 30px;
+    gap: 20px;
     align-items: flex-start;
     justify-content: center;
-    margin-top: 0px;
+    margin-top: 10px;
     flex-wrap: wrap; 
   }
 
@@ -127,7 +168,7 @@
     font-weight: bold;
     cursor: pointer;
     user-select: none;
-    font-size: 18px;
+    font-size: calc(var(--cell-size) * 0.45); 
     box-sizing: border-box;
     
     box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4), inset -1px -1px 0 rgba(0, 0, 0, 0.5);
@@ -147,7 +188,7 @@
 
   .cell.flagged::after {
     content: '🚩';
-    font-size: 16px;
+    font-size: calc(var(--cell-size) * 0.4);
     text-shadow: 
       -1px -1px 0 #fff,  
        1px -1px 0 #fff,
@@ -166,21 +207,22 @@
   .number-7 { color: #111827; }
   .number-8 { color: #4b5563; }
 
-  /* ▼ 変更点：サイドパネルの幅を固定し、文字数変化によるレイアウトのズレを防止 */
   #side-panel {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    width: 240px; /* min-widthから固定のwidthに変更 */
-    box-sizing: border-box; /* paddingを含めた幅として計算させる */
+    gap: 12px;
+    width: 240px; 
+    box-sizing: border-box; 
     background: #fff;
-    padding: 20px;
+    padding: 15px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
   }
 
   #status {
-    font-size: 1.2em;
+    font-size: 1.1em;
     font-weight: bold;
     color: #333;
     height: 1.5em;
@@ -191,18 +233,18 @@
     font-size: 1.1em;
     font-weight: bold;
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
   }
 
   .controls {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
 
   button {
-    padding: 12px 16px;
-    font-size: 1em;
+    padding: 10px 14px;
+    font-size: 0.95em;
     font-weight: bold;
     cursor: pointer;
     border: 1px solid #aaa;
@@ -220,7 +262,6 @@
     background-color: #f0f9ff;
     border: 2px solid #bae6fd;
     color: #0369a1;
-    margin-bottom: 10px; 
   }
 
   #mode-toggle-btn.flag-mode {
@@ -235,6 +276,18 @@
 
 <div id="screen-menu" class="screen">
   <h2>ステージ選択</h2>
+  
+  <div class="rule-box menu-rule">
+    <h3 style="margin: 0 0 10px 0; color: #333;">遊び方</h3>
+    <p class="rule-desc">
+      左クリックで好きなマスを開けて、下に隠された画像を完成させましょう！<br>
+      ただし一定割合で配置された地雷マスを開けてしまうとゲームオーバー！<br>
+      開けたマスに書かれた数字は<b>「周囲8マスのどこかにある地雷の数」</b>です。<br>
+      地雷のありそうなマスには右クリックで旗（🚩）を立てて目印にしましょう。<br>
+      地雷以外のマスを全て開ければクリア！無防備なアイドルを爆発から救い出せ！<br>
+    </p>
+  </div>
+
   <div id="stage-list" class="stage-list">
     </div>
 </div>
@@ -253,13 +306,24 @@
         <button onclick="init()">リトライ</button>
         <button onclick="showMenu()">ステージ選択</button>
       </div>
+      
+      <div class="rule-box game-rule">
+        <h4 style="margin: 0 0 8px 0; color: #333; text-align: center;">簡易ルール</h4>
+        <ul class="game-rule-list">
+          <li>数字は周囲8マスの地雷数</li>
+          <li>地雷のあるマスには右クリックで 🚩 を立てられる</li>
+          <li>地雷以外を全て開けよう</li>
+        </ul>
+      </div>
+
     </div>
   </div>
 </div>
 
 <script>
   // ▼▼▼ 設定エリア ▼▼▼
-  const DEV_MODE = false; 
+  
+  const DEV_MODE = true; // trueで全ステージ解放、falseで通常プレイ
 
   const STAGES = {
     beginner: {
@@ -279,7 +343,7 @@
     advanced: {
       title: "上級",
       imgClosed: "https://files.catbox.moe/e6vmgy.jpg",
-      imgOpened: "https://files.catbox.moe/fp9k62.jpg",
+      imgOpened: "https://files.catbox.moe/hlsmhd.jpg",
       cols: 9,          
       minePercent: 20    
     }
@@ -297,11 +361,13 @@
   let COLS = 9;
   let ROWS = 12; 
   let MINES = 10;
+  
+  let currentCellSize = 40; 
+  
   let board = [];
   let gameOver = false;
   let firstClick = true;
   let flagsRemaining = 0;
-
   let isFlagMode = false;
 
   const menuScreen = document.getElementById('screen-menu');
@@ -398,7 +464,7 @@
     };
 
     img.onerror = function() {
-      setupGameVariables(4 / 3);
+      setupGameVariables(5 / 3); 
     };
   }
 
@@ -415,10 +481,23 @@
     MINES = Math.floor((ROWS * COLS) * (currentStageConfig.minePercent / 100));
     MINES = Math.min(MINES, (ROWS * COLS) - 9);
 
+    const availableHeight = window.innerHeight - 180;
+    
+    let availableWidth = window.innerWidth - 300; 
+    if (window.innerWidth < 600) { 
+      availableWidth = window.innerWidth - 40; 
+    }
+
+    const calculatedSizeH = Math.floor(availableHeight / ROWS);
+    const calculatedSizeW = Math.floor(availableWidth / COLS);
+    
+    currentCellSize = Math.max(15, Math.min(40, calculatedSizeH, calculatedSizeW));
+
     document.documentElement.style.setProperty('--img-closed', `url('${currentStageConfig.imgClosed}')`);
     document.documentElement.style.setProperty('--img-opened', `url('${currentStageConfig.imgOpened}')`);
     document.documentElement.style.setProperty('--cols', COLS);
     document.documentElement.style.setProperty('--rows', ROWS);
+    document.documentElement.style.setProperty('--cell-size', currentCellSize + 'px');
 
     init(); 
   }
@@ -442,7 +521,8 @@
       for (let c = 0; c < COLS; c++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
-        cell.style.backgroundPosition = `-${c * 40}px -${r * 40}px`;
+        
+        cell.style.backgroundPosition = `-${c * currentCellSize}px -${r * currentCellSize}px`;
         
         cell.addEventListener('click', () => {
           if (isFlagMode) {
@@ -593,8 +673,9 @@
         }
       }
 
+      // ▼ 変更点：紙吹雪が降る時間を2.5秒から1秒に変更
       setTimeout(() => {
-        const duration = 1 * 1000; 
+        const duration = 1 * 1000; // ここを 1 * 1000 に変更
         const end = Date.now() + duration;
 
         (function frame() {
