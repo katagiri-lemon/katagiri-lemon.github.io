@@ -143,6 +143,30 @@
     cursor: not-allowed;
   }
 
+  /* ▼ 追加：コントローラーの演出用スタイル ▼ */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  
+  .controller-target {
+    box-shadow: inset 0 0 0 4px #ef4444 !important;
+    position: relative;
+    z-index: 20; /* 他のマスより上に表示する */
+  }
+  
+  .controller-target::before {
+    content: '🎮';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: calc(var(--cell-size) * 0.6);
+    z-index: 21;
+    animation: blink 0.5s infinite;
+    text-shadow: 0 0 4px #fff, 0 0 4px #fff; /* 背景に埋もれないように白フチ */
+  }
+
   /* ▼▼▼ ステージ選択画面のスタイル ▼▼▼ */
   .stage-list {
     display: flex;
@@ -282,16 +306,14 @@
   .number-7 { color: #111827; }
   .number-8 { color: #4b5563; }
 
-  /* ▼ 変更点：基本UIとお助けパネルをまとめるラッパー（これで横幅を固定します） */
   #ui-wrapper {
     position: relative;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    width: 240px; /* 全体が左にズレないよう、常に240pxとして計算させる */
+    width: 240px; 
   }
 
-  /* コントロール・簡易ルールのサイドパネル */
   #side-panel {
     display: flex;
     flex-direction: column;
@@ -306,7 +328,6 @@
     overflow-y: auto;
   }
 
-  /* ▼ 変更点：お助け機能専用のパネル（絶対配置にして親の幅計算に影響させない） */
   #help-panel {
     display: flex;
     flex-direction: column;
@@ -317,11 +338,10 @@
     overflow-y: auto;
   }
 
-  /* PC等の画面横幅に余裕がある時は、お助けパネルを右側に浮かせて表示する */
   @media (min-width: 900px) {
     #help-panel {
       position: absolute;
-      left: calc(100% + 20px); /* 自身の幅の右側 + 隙間20px */
+      left: calc(100% + 20px); 
       top: 0;
     }
   }
@@ -390,6 +410,7 @@
       開けたマスに書かれた数字は<b>「周囲8マスのどこかにある地雷の数」</b>です。<br>
       地雷のありそうなマスには右クリックで旗（🚩）を立てて目印にしましょう。<br>
       地雷以外のマスを全て開ければクリア！無防備なアイドルを爆発から救い出せ！<br>
+
     </p>
   </div>
 
@@ -402,13 +423,9 @@
   <h2 id="game-title">マインスイーパー</h2>
   
   <div id="game-container">
-    <!-- 盤面 -->
     <div id="board"></div>
     
-    <!-- ▼ 変更点：UI全体をまとめるラッパー -->
     <div id="ui-wrapper">
-      
-      <!-- 中央：基本UIパネル -->
       <div id="side-panel">
         <div id="status"></div>
         <div id="mine-count"></div>
@@ -428,10 +445,9 @@
         </div>
       </div>
 
-      <!-- 右横に配置される「お助け機能専用パネル」 -->
       <div id="help-panel" style="display: none;">
         
-        <!-- お助け機能１：千枝の裁縫セット（赤 / 3回失敗） -->
+        <!-- お助け機能１：千枝の裁縫セット -->
         <div id="help-feature" class="rule-box" style="display: none;">
           <h4 style="margin: 0 0 8px 0; color: #b91c1c; text-align: center;">お助け機能 発動中</h4>
           <div style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #991b1b;">
@@ -442,7 +458,7 @@
           </p>
         </div>
 
-        <!-- お助け機能２：晴のサッカーボール（青 / 6回失敗） -->
+        <!-- お助け機能２：晴のサッカーボール -->
         <div id="help-soccer" class="rule-box" style="display: none;">
           <h4 style="margin: 0 0 8px 0; color: #1d4ed8; text-align: center;">お助け機能 発動中</h4>
           <div style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #1e3a8a;">
@@ -454,14 +470,14 @@
           <button id="soccer-btn" onclick="toggleSoccerMode()">使う！</button>
         </div>
 
-        <!-- お助け機能３：紗南のコントローラー（黄 / 9回失敗） -->
+        <!-- お助け機能３：紗南のコントローラー -->
         <div id="help-controller" class="rule-box" style="display: none;">
           <h4 style="margin: 0 0 8px 0; color: #a16207; text-align: center;">お助け機能 発動中</h4>
           <div style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #854d0e;">
             🎮 紗南のコントローラー
           </div>
           <p style="margin: 0; font-size: 0.8em; color: #713f12; line-height: 1.4;">
-            地雷の無いマスをひとつランダムに開けます。
+            地雷の無いマスをひとつランダムに開けます。より多くのマスが開く場所を優先的に選んでくれます。
           </p>
           <button id="controller-btn" onclick="useController()">使う！</button>
         </div>
@@ -527,6 +543,10 @@
   let isSoccerUsed = false;
   let isSoccerMode = false;
   let isControllerUsed = false;
+  
+  // ▼ 追加：操作をロックするための変数と、タイマーの安全用ID
+  let isLocked = false;
+  let playId = 0;
 
   const menuScreen = document.getElementById('screen-menu');
   const gameScreen = document.getElementById('screen-game');
@@ -546,7 +566,7 @@
   const controllerBtn = document.getElementById('controller-btn');
 
   function toggleMode() {
-    if (gameOver) return;
+    if (gameOver || isLocked) return; // ロック中は無効化
     
     if (isSoccerMode) toggleSoccerMode();
     
@@ -561,7 +581,7 @@
   }
 
   function toggleSoccerMode() {
-    if (gameOver || isSoccerUsed) return;
+    if (gameOver || isSoccerUsed || isLocked) return; // ロック中は無効化
     isSoccerMode = !isSoccerMode;
     
     const cursor = document.getElementById('soccer-cursor');
@@ -581,7 +601,7 @@
   }
 
   function useController() {
-    if (gameOver || isControllerUsed) return;
+    if (gameOver || isControllerUsed || isLocked) return; // ロック中は無効化
     
     if (firstClick) {
       placeMinesAndNumbers(Math.floor(ROWS / 2), Math.floor(COLS / 2));
@@ -611,18 +631,45 @@
     }
 
     if (target) {
-      if (board[target.r][target.c].isFlagged) {
-        toggleFlag(target.r, target.c);
-      }
-      reveal(target.r, target.c);
-    }
+      // ▼ 追加：コントローラーの演出をスタート
+      isLocked = true;
+      let targetCell = board[target.r][target.c].element;
+      targetCell.classList.add('controller-target'); // 赤枠と点滅を追加
 
-    isControllerUsed = true;
-    controllerBtn.innerText = '使用済み';
-    controllerBtn.disabled = true;
-    controllerBtn.style.backgroundColor = '';
-    controllerBtn.style.borderColor = '';
-    controllerBtn.style.color = '';
+      // ボタンを使用済みにする
+      isControllerUsed = true;
+      controllerBtn.innerText = '使用済み';
+      controllerBtn.disabled = true;
+      controllerBtn.style.backgroundColor = '';
+      controllerBtn.style.borderColor = '';
+      controllerBtn.style.color = '';
+
+      const currentPlay = playId; // タイマー待機中にリトライされた時のための安全確認
+
+      setTimeout(() => {
+        // 別のゲームに移行していたらタイマーの処理をキャンセル
+        if (playId !== currentPlay) return; 
+
+        // 演出の終了
+        targetCell.classList.remove('controller-target');
+        isLocked = false;
+
+        // 対象マスに間違った旗が立っていれば外して開ける
+        if (board[target.r][target.c].isFlagged) {
+          toggleFlag(target.r, target.c);
+        }
+        reveal(target.r, target.c);
+      }, 2000); // 2秒間待つ
+
+    } else {
+      // 対象マスがない（既にクリア済みの時など）場合はボタンだけ無効化
+      isControllerUsed = true;
+      controllerBtn.innerText = '使用済み';
+      controllerBtn.disabled = true;
+      controllerBtn.style.backgroundColor = '';
+      controllerBtn.style.borderColor = '';
+      controllerBtn.style.color = '';
+    }
   }
 
   function initMenu() {
@@ -734,8 +781,6 @@
     MINES = Math.min(MINES, (ROWS * COLS) - 9);
 
     const availableHeight = window.innerHeight - 180;
-    
-    // ▼ 変更点：お助けパネルが表示される分のスペース（幅560px）を常に想定してマスサイズを計算する
     let availableWidth = window.innerWidth - 560; 
     
     if (window.innerWidth < 900) { 
@@ -757,6 +802,9 @@
   }
 
   function init() {
+    playId = Date.now(); // ▼ 追加：現在のプレイIDをセット
+    isLocked = false;    // ▼ 追加：ロックを解除
+
     boardElement.innerHTML = '';
     statusElement.innerText = '';
     gameOver = false;
@@ -842,6 +890,7 @@
         });
 
         cell.addEventListener('click', () => {
+          if (isLocked) return; // ▼ 追加：ロック中はクリック無効
           if (isSoccerMode) {
             applySoccerEffect(r, c); 
           } else if (isFlagMode) {
@@ -853,11 +902,13 @@
         
         cell.addEventListener('contextmenu', (e) => {
           e.preventDefault();
+          if (isLocked) return; // ▼ 追加：ロック中は右クリック無効
           if (isSoccerMode) return; 
           toggleFlag(r, c);
         });
 
         cell.addEventListener('dblclick', () => {
+          if (isLocked) return; // ▼ 追加：ロック中はダブルクリック無効
           if (isSoccerMode) return;
           chordReveal(r, c);
         });
