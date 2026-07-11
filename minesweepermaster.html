@@ -31,7 +31,7 @@
     margin: 10px 0;
   }
 
-  /* ▼▼▼ ルール説明のスタイル ▼▼▼ */
+  /* ▼▼▼ ルール・お助け機能のスタイル ▼▼▼ */
   .rule-box {
     background: #fff;
     border: 1px solid #ddd;
@@ -67,6 +67,80 @@
     font-size: 0.85em;
     color: #555;
     line-height: 1.4;
+  }
+
+  /* ▼ お助け機能１：裁縫セットのスタイル（赤） */
+  #help-feature {
+    border-color: #fca5a5;
+    background-color: #fef2f2;
+    padding: 12px;
+    margin-top: 0;
+  }
+
+  /* ▼ お助け機能２：サッカーボールのスタイル（青） */
+  #help-soccer {
+    border-color: #93c5fd;
+    background-color: #eff6ff;
+    padding: 12px;
+    margin-top: 0;
+  }
+
+  #soccer-btn {
+    background-color: #bfdbfe;
+    border: 1px solid #60a5fa;
+    color: #1e3a8a;
+    padding: 8px;
+    font-size: 0.95em;
+    width: 100%;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  #soccer-btn:hover:not(:disabled) {
+    background-color: #93c5fd;
+  }
+
+  #soccer-btn:disabled {
+    background-color: #e5e7eb;
+    border-color: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
+
+  /* ▼ お助け機能３：コントローラーのスタイル（黄） */
+  #help-controller {
+    border-color: #fde047;
+    background-color: #fefce8;
+    padding: 12px;
+    margin-top: 0;
+  }
+
+  #controller-btn {
+    background-color: #fef08a;
+    border: 1px solid #facc15;
+    color: #a16207;
+    padding: 8px;
+    font-size: 0.95em;
+    width: 100%;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  #controller-btn:hover:not(:disabled) {
+    background-color: #fde047;
+  }
+
+  #controller-btn:disabled {
+    background-color: #e5e7eb;
+    border-color: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
   }
 
   /* ▼▼▼ ステージ選択画面のスタイル ▼▼▼ */
@@ -155,6 +229,7 @@
     grid-template-rows: repeat(var(--rows), var(--cell-size));
     background-color: #ccc;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    position: relative; 
   }
 
   .cell {
@@ -207,11 +282,21 @@
   .number-7 { color: #111827; }
   .number-8 { color: #4b5563; }
 
+  /* ▼ 変更点：基本UIとお助けパネルをまとめるラッパー（これで横幅を固定します） */
+  #ui-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 240px; /* 全体が左にズレないよう、常に240pxとして計算させる */
+  }
+
+  /* コントロール・簡易ルールのサイドパネル */
   #side-panel {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    width: 240px; 
+    width: 100%; 
     box-sizing: border-box; 
     background: #fff;
     padding: 15px;
@@ -219,6 +304,26 @@
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     max-height: calc(100vh - 80px);
     overflow-y: auto;
+  }
+
+  /* ▼ 変更点：お助け機能専用のパネル（絶対配置にして親の幅計算に影響させない） */
+  #help-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%; 
+    box-sizing: border-box; 
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+  }
+
+  /* PC等の画面横幅に余裕がある時は、お助けパネルを右側に浮かせて表示する */
+  @media (min-width: 900px) {
+    #help-panel {
+      position: absolute;
+      left: calc(100% + 20px); /* 自身の幅の右側 + 隙間20px */
+      top: 0;
+    }
   }
 
   #status {
@@ -254,7 +359,7 @@
     transition: all 0.2s;
   }
 
-  button:hover {
+  button:hover:not(:disabled) {
     background-color: #e0e0e0;
   }
 
@@ -289,31 +394,78 @@
   </div>
 
   <div id="stage-list" class="stage-list">
-    </div>
+    <!-- JSで自動生成されます -->
+  </div>
 </div>
 
 <div id="screen-game" class="screen" style="display: none;">
   <h2 id="game-title">マインスイーパー</h2>
   
   <div id="game-container">
+    <!-- 盤面 -->
     <div id="board"></div>
     
-    <div id="side-panel">
-      <div id="status"></div>
-      <div id="mine-count"></div>
-      <div class="controls">
-        <button id="mode-toggle-btn" onclick="toggleMode()">モード：開ける ⛏️</button>
-        <button onclick="init()">リトライ</button>
-        <button onclick="showMenu()">ステージ選択</button>
-      </div>
+    <!-- ▼ 変更点：UI全体をまとめるラッパー -->
+    <div id="ui-wrapper">
       
-      <div class="rule-box game-rule">
-        <h4 style="margin: 0 0 8px 0; color: #333; text-align: center;">簡易ルール</h4>
-        <ul class="game-rule-list">
-          <li>数字は周囲8マスの地雷数</li>
-          <li>地雷のあるマスには右クリックで 🚩 を立てられる</li>
-          <li>地雷以外を全て開けよう</li>
-        </ul>
+      <!-- 中央：基本UIパネル -->
+      <div id="side-panel">
+        <div id="status"></div>
+        <div id="mine-count"></div>
+        <div class="controls">
+          <button id="mode-toggle-btn" onclick="toggleMode()">モード：開ける ⛏️</button>
+          <button onclick="init()">リトライ</button>
+          <button onclick="showMenu()">ステージ選択</button>
+        </div>
+        
+        <div class="rule-box game-rule">
+          <h4 style="margin: 0 0 8px 0; color: #333; text-align: center;">簡易ルール</h4>
+          <ul class="game-rule-list">
+            <li>数字は周囲8マスの地雷数</li>
+            <li>地雷のあるマスには右クリックで 🚩 を立てられる</li>
+            <li>地雷以外を全て開けよう</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 右横に配置される「お助け機能専用パネル」 -->
+      <div id="help-panel" style="display: none;">
+        
+        <!-- お助け機能１：千枝の裁縫セット（赤 / 3回失敗） -->
+        <div id="help-feature" class="rule-box" style="display: none;">
+          <h4 style="margin: 0 0 8px 0; color: #b91c1c; text-align: center;">お助け機能 発動中</h4>
+          <div style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #991b1b;">
+            🪡 千枝の裁縫セット <span id="help-status" style="font-size: 0.8em; font-weight: normal;">(未使用)</span>
+          </div>
+          <p style="margin: 0; font-size: 0.8em; color: #7f1d1d; line-height: 1.4;">
+            地雷マスを開けてしまっても、一度だけ敗北を回避できます。
+          </p>
+        </div>
+
+        <!-- お助け機能２：晴のサッカーボール（青 / 6回失敗） -->
+        <div id="help-soccer" class="rule-box" style="display: none;">
+          <h4 style="margin: 0 0 8px 0; color: #1d4ed8; text-align: center;">お助け機能 発動中</h4>
+          <div style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #1e3a8a;">
+            ⚽ 晴のサッカーボール
+          </div>
+          <p style="margin: 0; font-size: 0.8em; color: #1e40af; line-height: 1.4;">
+            3x3マスの範囲で地雷の無いマスをすべて開け、地雷には自動で旗を立てます。
+          </p>
+          <button id="soccer-btn" onclick="toggleSoccerMode()">使う！</button>
+        </div>
+
+        <!-- お助け機能３：紗南のコントローラー（黄 / 9回失敗） -->
+        <div id="help-controller" class="rule-box" style="display: none;">
+          <h4 style="margin: 0 0 8px 0; color: #a16207; text-align: center;">お助け機能 発動中</h4>
+          <div style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #854d0e;">
+            🎮 紗南のコントローラー
+          </div>
+          <p style="margin: 0; font-size: 0.8em; color: #713f12; line-height: 1.4;">
+            地雷の無いマスをひとつランダムに開けます。
+          </p>
+          <button id="controller-btn" onclick="useController()">使う！</button>
+        </div>
+
       </div>
 
     </div>
@@ -323,7 +475,7 @@
 <script>
   // ▼▼▼ 設定エリア ▼▼▼
   
-  const DEV_MODE = false; // trueで全ステージ解放、falseで通常プレイ
+  const DEV_MODE = false; 
 
   const STAGES = {
     beginner: {
@@ -349,7 +501,7 @@
     }
   };
 
-  
+
   const STAGE_ORDER = ['beginner', 'intermediate', 'advanced'];
   // ▲▲▲ 設定エリアここまで ▲▲▲
 
@@ -370,6 +522,12 @@
   let flagsRemaining = 0;
   let isFlagMode = false;
 
+  let consecutiveFails = 0; 
+  let isHelpUsed = false;   
+  let isSoccerUsed = false;
+  let isSoccerMode = false;
+  let isControllerUsed = false;
+
   const menuScreen = document.getElementById('screen-menu');
   const gameScreen = document.getElementById('screen-game');
   const gameTitle = document.getElementById('game-title');
@@ -378,9 +536,20 @@
   const mineCountElement = document.getElementById('mine-count');
   const stageList = document.getElementById('stage-list');
   const modeToggleBtn = document.getElementById('mode-toggle-btn');
+  
+  const helpPanel = document.getElementById('help-panel');
+  const helpFeatureBox = document.getElementById('help-feature');
+  const helpStatusText = document.getElementById('help-status');
+  const soccerFeatureBox = document.getElementById('help-soccer');
+  const soccerBtn = document.getElementById('soccer-btn');
+  const controllerFeatureBox = document.getElementById('help-controller');
+  const controllerBtn = document.getElementById('controller-btn');
 
   function toggleMode() {
     if (gameOver) return;
+    
+    if (isSoccerMode) toggleSoccerMode();
+    
     isFlagMode = !isFlagMode;
     if (isFlagMode) {
       modeToggleBtn.innerText = 'モード：旗を立てる 🚩';
@@ -389,6 +558,71 @@
       modeToggleBtn.innerText = 'モード：開ける ⛏️';
       modeToggleBtn.classList.remove('flag-mode');
     }
+  }
+
+  function toggleSoccerMode() {
+    if (gameOver || isSoccerUsed) return;
+    isSoccerMode = !isSoccerMode;
+    
+    const cursor = document.getElementById('soccer-cursor');
+
+    if (isSoccerMode) {
+      soccerBtn.innerText = 'やめる';
+      soccerBtn.style.backgroundColor = '#fee2e2'; 
+      soccerBtn.style.borderColor = '#f87171';
+      soccerBtn.style.color = '#991b1b';
+    } else {
+      soccerBtn.innerText = '使う！';
+      soccerBtn.style.backgroundColor = ''; 
+      soccerBtn.style.borderColor = '';
+      soccerBtn.style.color = '';
+      if (cursor) cursor.style.display = 'none';
+    }
+  }
+
+  function useController() {
+    if (gameOver || isControllerUsed) return;
+    
+    if (firstClick) {
+      placeMinesAndNumbers(Math.floor(ROWS / 2), Math.floor(COLS / 2));
+      firstClick = false;
+    }
+
+    let candidatesZero = [];
+    let candidatesSafe = [];
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (!board[r][c].isMine && !board[r][c].isRevealed) {
+          candidatesSafe.push({r, c});
+          if (board[r][c].neighborMines === 0) {
+            candidatesZero.push({r, c});
+          }
+        }
+      }
+    }
+
+    let target = null;
+    if (candidatesZero.length > 0) {
+      target = candidatesZero[Math.floor(Math.random() * candidatesZero.length)];
+    } 
+    else if (candidatesSafe.length > 0) {
+      target = candidatesSafe[Math.floor(Math.random() * candidatesSafe.length)];
+    }
+
+    if (target) {
+      if (board[target.r][target.c].isFlagged) {
+        toggleFlag(target.r, target.c);
+      }
+      reveal(target.r, target.c);
+    }
+
+    isControllerUsed = true;
+    controllerBtn.innerText = '使用済み';
+    controllerBtn.disabled = true;
+    controllerBtn.style.backgroundColor = '';
+    controllerBtn.style.borderColor = '';
+    controllerBtn.style.color = '';
   }
 
   function initMenu() {
@@ -429,6 +663,19 @@
           const rows = Math.round(stage.cols * (img.height / img.width));
           desc.innerText = `${stage.cols}×${rows}マス / 地雷${stage.minePercent}%`;
         };
+
+        card.appendChild(thumb);
+        card.appendChild(title);
+        card.appendChild(desc);
+
+        if (isCleared) {
+          const clearMark = document.createElement('div');
+          clearMark.innerText = 'CLEAR!';
+          clearMark.style.color = '#15803d';
+          clearMark.style.fontWeight = 'bold';
+          clearMark.style.marginTop = '8px';
+          card.appendChild(clearMark);
+        }
       } else {
         card.classList.add('locked');
         thumb.classList.add('locked');
@@ -436,16 +683,21 @@
         
         title.innerText = `${stage.title} (未解放)`;
         desc.innerText = `???×???マス / 地雷???%`;
+
+        card.appendChild(thumb);
+        card.appendChild(title);
+        card.appendChild(desc);
       }
 
-      card.appendChild(thumb);
-      card.appendChild(title);
-      card.appendChild(desc);
       stageList.appendChild(card);
     }
   }
 
   function startStage(stageKey) {
+    if (currentStageId !== stageKey) {
+      consecutiveFails = 0;
+    }
+    
     currentStageId = stageKey;
     currentStageConfig = STAGES[stageKey];
     gameTitle.innerText = `${currentStageConfig.title}ステージ`;
@@ -483,8 +735,10 @@
 
     const availableHeight = window.innerHeight - 180;
     
-    let availableWidth = window.innerWidth - 300; 
-    if (window.innerWidth < 600) { 
+    // ▼ 変更点：お助けパネルが表示される分のスペース（幅560px）を常に想定してマスサイズを計算する
+    let availableWidth = window.innerWidth - 560; 
+    
+    if (window.innerWidth < 900) { 
       availableWidth = window.innerWidth - 40; 
     }
 
@@ -516,16 +770,81 @@
     modeToggleBtn.innerText = 'モード：開ける ⛏️';
     modeToggleBtn.classList.remove('flag-mode');
 
+    if (consecutiveFails >= 3) {
+      helpPanel.style.display = 'flex';
+    } else {
+      helpPanel.style.display = 'none';
+    }
+
+    isHelpUsed = false;
+    if (consecutiveFails >= 3) {
+      helpFeatureBox.style.display = 'block';
+      helpStatusText.innerText = '(未使用)';
+      helpStatusText.style.color = 'inherit';
+    } else {
+      helpFeatureBox.style.display = 'none';
+    }
+
+    isSoccerUsed = false;
+    isSoccerMode = false;
+    if (consecutiveFails >= 6) {
+      soccerFeatureBox.style.display = 'block';
+      soccerBtn.innerText = '使う！';
+      soccerBtn.disabled = false;
+      soccerBtn.style.backgroundColor = '';
+      soccerBtn.style.borderColor = '';
+      soccerBtn.style.color = '';
+    } else {
+      soccerFeatureBox.style.display = 'none';
+    }
+
+    isControllerUsed = false;
+    if (consecutiveFails >= 9) {
+      controllerFeatureBox.style.display = 'block';
+      controllerBtn.innerText = '使う！';
+      controllerBtn.disabled = false;
+      controllerBtn.style.backgroundColor = '';
+      controllerBtn.style.borderColor = '';
+      controllerBtn.style.color = '';
+    } else {
+      controllerFeatureBox.style.display = 'none';
+    }
+
+    const soccerCursor = document.createElement('div');
+    soccerCursor.id = 'soccer-cursor';
+    soccerCursor.style.cssText = 'display: none; position: absolute; border: 4px solid #ef4444; border-radius: 4px; pointer-events: none; z-index: 10; box-sizing: border-box;';
+    boardElement.appendChild(soccerCursor);
+
+    boardElement.addEventListener('mouseleave', () => {
+      if (soccerCursor) soccerCursor.style.display = 'none';
+    });
+
     for (let r = 0; r < ROWS; r++) {
       let row = [];
       for (let c = 0; c < COLS; c++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
-        
         cell.style.backgroundPosition = `-${c * currentCellSize}px -${r * currentCellSize}px`;
         
+        cell.addEventListener('mouseenter', () => {
+          if (!isSoccerMode) return;
+          
+          let minR = Math.max(0, r - 1);
+          let maxR = Math.min(ROWS - 1, r + 1);
+          let minC = Math.max(0, c - 1);
+          let maxC = Math.min(COLS - 1, c + 1);
+
+          soccerCursor.style.display = 'block';
+          soccerCursor.style.top = (minR * currentCellSize) + 'px';
+          soccerCursor.style.left = (minC * currentCellSize) + 'px';
+          soccerCursor.style.width = ((maxC - minC + 1) * currentCellSize) + 'px';
+          soccerCursor.style.height = ((maxR - minR + 1) * currentCellSize) + 'px';
+        });
+
         cell.addEventListener('click', () => {
-          if (isFlagMode) {
+          if (isSoccerMode) {
+            applySoccerEffect(r, c); 
+          } else if (isFlagMode) {
             toggleFlag(r, c); 
           } else {
             reveal(r, c);     
@@ -534,7 +853,13 @@
         
         cell.addEventListener('contextmenu', (e) => {
           e.preventDefault();
+          if (isSoccerMode) return; 
           toggleFlag(r, c);
+        });
+
+        cell.addEventListener('dblclick', () => {
+          if (isSoccerMode) return;
+          chordReveal(r, c);
         });
         
         boardElement.appendChild(cell);
@@ -547,6 +872,88 @@
         });
       }
       board.push(row);
+    }
+  }
+
+  function applySoccerEffect(r, c) {
+    if (gameOver) return;
+
+    if (firstClick) {
+      placeMinesAndNumbers(r, c);
+      firstClick = false;
+    }
+
+    let minR = Math.max(0, r - 1);
+    let maxR = Math.min(ROWS - 1, r + 1);
+    let minC = Math.max(0, c - 1);
+    let maxC = Math.min(COLS - 1, c + 1);
+
+    for (let dr = minR; dr <= maxR; dr++) {
+      for (let dc = minC; dc <= maxC; dc++) {
+        let targetCell = board[dr][dc];
+        
+        if (targetCell.isMine) {
+          if (!targetCell.isFlagged && !targetCell.isRevealed) {
+            targetCell.isFlagged = true;
+            targetCell.element.classList.add('flagged');
+            flagsRemaining--;
+          }
+        } else {
+          if (targetCell.isFlagged) {
+            targetCell.isFlagged = false;
+            targetCell.element.classList.remove('flagged');
+            flagsRemaining++;
+          }
+          if (!targetCell.isRevealed) {
+             reveal(dr, dc);
+          }
+        }
+      }
+    }
+
+    mineCountElement.innerText = `残りの地雷: ${flagsRemaining}`;
+
+    isSoccerUsed = true;
+    isSoccerMode = false;
+
+    soccerBtn.innerText = '使用済み';
+    soccerBtn.disabled = true;
+    soccerBtn.style.backgroundColor = '';
+    soccerBtn.style.borderColor = '';
+    soccerBtn.style.color = '';
+
+    const cursor = document.getElementById('soccer-cursor');
+    if (cursor) cursor.style.display = 'none';
+
+    checkWin(); 
+  }
+
+  function chordReveal(r, c) {
+    if (gameOver || !board[r][c].isRevealed || board[r][c].neighborMines === 0) return;
+
+    let flagCount = 0;
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        let nr = r + dr;
+        let nc = c + dc;
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc].isFlagged) {
+          flagCount++;
+        }
+      }
+    }
+
+    if (flagCount >= board[r][c].neighborMines) {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          let nr = r + dr;
+          let nc = c + dc;
+          if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+            if (!board[nr][nc].isFlagged && !board[nr][nc].isRevealed) {
+              reveal(nr, nc);
+            }
+          }
+        }
+      }
     }
   }
 
@@ -596,11 +1003,31 @@
     cellData.element.classList.add('opened');
 
     if (cellData.isMine) {
+      
+      if (consecutiveFails >= 3 && !isHelpUsed) {
+        isHelpUsed = true;
+        
+        cellData.element.innerHTML = '<div style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">💣<span style="position:absolute; top:-2px; right:-2px; font-size:0.75em;">🪡</span></div>';
+        cellData.element.classList.add('mine');
+        cellData.element.style.opacity = '0.7'; 
+
+        flagsRemaining--;
+        mineCountElement.innerText = `残りの地雷: ${flagsRemaining}`;
+
+        helpStatusText.innerText = '(使用済み)';
+        helpStatusText.style.color = '#999';
+
+        checkWin(); 
+        return;
+      }
+
       cellData.element.innerText = '💥';
       cellData.element.classList.add('mine');
       statusElement.innerText = 'ゲームオーバー！';
       statusElement.style.color = 'red';
       gameOver = true;
+      consecutiveFails++; 
+      
       revealAllMines();
     } else {
       if (cellData.neighborMines > 0) {
@@ -640,7 +1067,7 @@
       for (let c = 0; c < COLS; c++) {
         if (board[r][c].isMine) {
           board[r][c].element.classList.add('opened');
-          if (!board[r][c].element.innerText) {
+          if (!board[r][c].element.innerText || board[r][c].element.innerText === '') {
             board[r][c].element.innerText = '💣';
           }
         }
@@ -649,17 +1076,22 @@
   }
 
   function checkWin() {
-    let revealedCount = 0;
+    let safeRevealedCount = 0;
+    let totalSafeCells = (ROWS * COLS) - MINES;
+
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        if (board[r][c].isRevealed) revealedCount++;
+        if (!board[r][c].isMine && board[r][c].isRevealed) {
+          safeRevealedCount++;
+        }
       }
     }
     
-    if (revealedCount === ROWS * COLS - MINES) {
+    if (safeRevealedCount === totalSafeCells) {
       statusElement.innerText = 'クリア！';
       statusElement.style.color = '#15803d';
       gameOver = true;
+      consecutiveFails = 0; 
       
       boardElement.classList.add('cleared'); 
       mineCountElement.innerText = `残りの地雷: 0`;
@@ -673,9 +1105,8 @@
         }
       }
 
-      // ▼ 変更点：紙吹雪が降る時間を2.5秒から1秒に変更
       setTimeout(() => {
-        const duration = 1 * 1000; // ここを 1 * 1000 に変更
+        const duration = 1 * 1000; 
         const end = Date.now() + duration;
 
         (function frame() {
